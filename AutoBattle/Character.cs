@@ -58,8 +58,10 @@ namespace AutoBattle
         public void TakeDamage(int amount)
         {
             Health -= amount;
+            // Clamps the value to never be less than zero.
+            Health = Health < 0 ? 0 : Health;
 
-            if(Health <= 0)
+            if(Health == 0)
                 Die();
         }
 

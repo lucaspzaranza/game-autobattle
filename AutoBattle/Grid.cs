@@ -151,11 +151,11 @@ namespace AutoBattle
                 HUDStartIndex = 30;
             Console.CursorLeft = HUDStartIndex - 5;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("Player");
+            Console.Write($"Player [{playerLife}]");
             Console.ForegroundColor = ConsoleColor.White;
-            Console.Write("       |       ");
+            Console.Write(" | ");
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Enemy");
+            Console.WriteLine($"Enemy [{enemyLife}]");
             Console.ForegroundColor = ConsoleColor.White;
 
             PrintLifebar(playerLife, HUDStartIndex - 5, ConsoleColor.DarkGreen);
@@ -192,19 +192,28 @@ namespace AutoBattle
         {
             // Player lifebar
 
-            // This is for the lifebar not being empty wit an life less than 10.
-            if (life < 10) life += 10;
-
             int barPercentage = life / 10; // The maxium will be ten characters.
             Console.CursorLeft = xCoordinate;
             Console.Write('[');
             Console.BackgroundColor = lifebarColor;
 
-            // Prints the life amount based on the player life. If 100, then 100 / 10 = 10, so we'll paint 10 green whitespaces.
-            // If, for example, the life equals 43, then we have: 43 / 10 = 4, so we'll paint 4 green whitespaces.
-            for (int i = 0; i < barPercentage; i++)
+            // If the barPercentage is between [0,10], then prints the lifebar right amount.
+            if(barPercentage > 0)
             {
-                Console.Write(' ');
+                // Prints the life amount based on the player life. If 100, then 100 / 10 = 10, so we'll paint 10 green whitespaces.
+                // If, for example, the life equals 43, then we have: 43 / 10 = 4, so we'll paint 4 green whitespaces.
+                for (int i = 0; i < barPercentage; i++)
+                {
+                    Console.Write(' ');
+                }
+            }
+            // if barPercentage equals zero and has some life, prints only one lifebar character.
+            else if (barPercentage == 0 && life > 0) 
+            {
+                Console.BackgroundColor = Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = lifebarColor;
+                Console.Write('|');
+                Console.ForegroundColor = ConsoleColor.Gray;
             }
 
             // Filling the empty space of the lifebar. If zero, it'll paint nothing. If, for example, the life is 4, the empty area will be 6.
