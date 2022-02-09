@@ -9,20 +9,25 @@ namespace AutoBattle
     public class Grid
     {
         public List<GridBox> grids = new List<GridBox>();
-        public int xLength;
-        public int yLength;
-        public int GridCount;
+        public int xLength; // Number of rows
+        public int yLength; // Number of columns
+        public int GridCount; // Array Length
 
-        private int playerLife = 100;
-        private int enemyLife = 100;
+        // Store the values to be printed on the HUD.
+        private int playerLifeHUD;
+        private int enemyLifeHUD;
 
         public Grid(int Lines, int Columns)
         {
             xLength = Lines;
             yLength = Columns;
+
+            playerLifeHUD = Character.defaultInitialHealth;
+            enemyLifeHUD = Character.defaultInitialHealth;
+
             GridCount = xLength * yLength;
-            // Adding a listener to this event.
-            Character.OnCharacterAttacked += HandleOnCharacterAttacked;
+
+            Character.OnCharacterLifeChanged += HandleOnCharacterLifeChanged;
             Character.OnCharacterDeath += HandleOnCharacterDeath;
 
             Console.WriteLine("The battle field has been created\n");
@@ -33,33 +38,18 @@ namespace AutoBattle
                     // I changed the i and j parameter location to grow on the left-right direction first
                     GridBox newBox = new GridBox(i, j, false, (Columns * i + j));
                     grids.Add(newBox);
-                    //Console.Write($"{newBox.Index}\n");
                 }
             }
 
             DrawBattlefield(Lines, Columns, false, false);
-            //DrawBattlefieldDebug(Lines, Columns); Debug purposes only.
         }
 
         // When the grid will be destroyed, we remove the listener from this event.
         ~Grid()
         {
-            Character.OnCharacterAttacked -= HandleOnCharacterAttacked;
+            Character.OnCharacterLifeChanged -= HandleOnCharacterLifeChanged;
             Character.OnCharacterDeath -= HandleOnCharacterDeath;
-        }
-
-        // When a Character will be attacked, we'll refresh the screen.
-        public void HandleOnCharacterAttacked(Character target)
-        {
-            // If equals player index, get its target health. Else, get the target's target health, which will be the player health.
-            playerLife = (target.PlayerIndex == Program.playerInitIndex) ? (int)target.Health : (int)target.Target.Health;
-
-            // If equals enemy index, get its target health. Else, get the target's target health, which will be the enemy health.
-            enemyLife = (target.PlayerIndex == Program.enemyInitIndex) ? (int)target.Health : (int)target.Target.Health;
-
-            // Finally, we draw the battlefield with its HUD.
-            DrawBattlefield(xLength, yLength);
-        }
+        }        
 
         // Prints the matrix that indicates the tiles of the battlefield.
         // Added two default parameters to clear console and draw the HUD.
@@ -80,15 +70,16 @@ namespace AutoBattle
                     int gridIndex = GetGridIndex(i, j);
                     if (grids[gridIndex].ocupied)
                     {
+                        // Write the grid with a player character inside of it. Ex: [A] if it's an archer, [P] if paladin...
                         Console.Write("[");
                         // Changing the color. Player will be green, enemy will be red.
-                        if(grids[gridIndex].PlayerIndex == Program.playerInitIndex)
+                        if(grids[gridIndex].PlayerIndex == Program.playerIndex)
                         {
                             Console.ForegroundColor = ConsoleColor.Green;
                             Console.Write(GetCharacterClassChar(grids[gridIndex].CharacterClassType));
                             Console.ForegroundColor = ConsoleColor.Gray;
                         }
-                        else if(grids[gridIndex].PlayerIndex == Program.enemyInitIndex)
+                        else if(grids[gridIndex].PlayerIndex == Program.enemyIndex)
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
                             Console.Write(GetCharacterClassChar(grids[gridIndex].CharacterClassType));
@@ -130,7 +121,7 @@ namespace AutoBattle
         {
             // This is just an algorithm to centralize the Autobattle title with the battefield.
             // I figured it out doing some tests.
-            int HUDStartIndex = (yLength < 4 && yLength > 2) ? 0 : (xLength + (3 * ((xLength - 1) - 3)));
+            int HUDStartIndex = (yLength <= 2) ? 0 : (xLength + (3 * ((yLength - 1) - 3)));
 
             Console.CursorLeft = (HUDStartIndex >= 0)? HUDStartIndex : 0;
             Console.Write("::: AUTOBATTLE :::");
@@ -146,20 +137,22 @@ namespace AutoBattle
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine(":::: HUD ::::");
 
-            // Players legend
+            // Players Status
             if (xLength < 3)
                 HUDStartIndex = 30;
             Console.CursorLeft = HUDStartIndex - 5;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write($"Player [{playerLife}]");
+            Console.Write($"Player [{playerLifeHUD}]");
+            Console.CursorLeft = HUDStartIndex + 7;
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write(" | ");
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Enemy [{enemyLife}]");
+            Console.WriteLine($"Enemy [{enemyLifeHUD}]");
             Console.ForegroundColor = ConsoleColor.White;
 
-            PrintLifebar(playerLife, HUDStartIndex - 5, ConsoleColor.DarkGreen);
-            PrintLifebar(enemyLife, HUDStartIndex + 9, ConsoleColor.DarkRed);
+            // Print a lifebar to each player
+            PrintLifebar(playerLifeHUD, HUDStartIndex - 5, ConsoleColor.DarkGreen);
+            PrintLifebar(enemyLifeHUD, HUDStartIndex + 9, ConsoleColor.DarkRed);
 
             Console.Write(Environment.NewLine + Environment.NewLine);
             HUDStartIndex -= 4;
@@ -197,7 +190,7 @@ namespace AutoBattle
             Console.Write('[');
             Console.BackgroundColor = lifebarColor;
 
-            // If the barPercentage is between [0,10], then prints the lifebar right amount.
+            // If the barPercentage is between [1,10], then prints the lifebar right amount.
             if(barPercentage > 0)
             {
                 // Prints the life amount based on the player life. If 100, then 100 / 10 = 10, so we'll paint 10 green whitespaces.
@@ -207,7 +200,7 @@ namespace AutoBattle
                     Console.Write(' ');
                 }
             }
-            // if barPercentage equals zero and has some life, prints only one lifebar character.
+            // If barPercentage equals zero and has some life yet, prints only one lifebar character.
             else if (barPercentage == 0 && life > 0) 
             {
                 Console.BackgroundColor = Console.BackgroundColor = ConsoleColor.Black;
@@ -216,7 +209,8 @@ namespace AutoBattle
                 Console.ForegroundColor = ConsoleColor.Gray;
             }
 
-            // Filling the empty space of the lifebar. If zero, it'll paint nothing. If, for example, the life is 4, the empty area will be 6.
+            // Filling the empty space of the lifebar. If zero, it'll paint nothing. If, for example, the barPercentage is 40%,
+            // i.e, 4 bars, the empty area will be 6.
             Console.BackgroundColor = ConsoleColor.Black;
             for (int i = barPercentage; i < 10; i++)
             {
@@ -289,12 +283,30 @@ namespace AutoBattle
         }
 
         /// <summary>
+        /// When a Character will be attacked, we'll refresh the screen.
+        /// </summary>
+        /// <param name="character">The character who has its life value changed.</param>
+        /// <param name="drawBattlefield">Flag to pass if you want to override the battlefield refreshing.</param>
+        public void HandleOnCharacterLifeChanged(Character character, bool drawBattlefield = true)
+        {
+            if (character.PlayerIndex == Program.playerIndex)
+                playerLifeHUD = character.Health;
+            else if (character.PlayerIndex == Program.enemyIndex)
+                enemyLifeHUD = character.Health;
+
+            if(drawBattlefield)
+                DrawBattlefield(xLength, yLength);
+        }
+
+        /// <summary>
         /// Updates the grid list with the dead character grid box data.
         /// </summary>
         /// <param name="characterGridBox">The character grid box with its reseted data.</param>
         public void HandleOnCharacterDeath(GridBox characterGridBox)
         {
             grids[characterGridBox.Index] = characterGridBox;
+            // Drawing one more time the battlefield to refresh the screen with the dead character no more appearing.
+            DrawBattlefield(xLength, yLength);
         }
     }
 }

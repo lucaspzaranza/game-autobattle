@@ -1,23 +1,31 @@
 ﻿using System;
 using static AutoBattle.Character;
 using static AutoBattle.Grid;
+using static AutoBattle.Types;
 using System.Collections.Generic;
 using System.Linq;
-using static AutoBattle.Types;
+
+/// <summary>
+/// Author: Lucas Zaranza
+/// Birthday: 31/08, Aug/Sep extra feature added (8 directions movement).
+/// </summary>
 
 namespace AutoBattle
 {
     class Program
     {
+        // Consts to limit the battlefield size to not overflow the console size.
         private const int xMaxRows = 10;
         private const int yMaxColumns = 10;
         private const string errorInputMessage = "Invalid value. Please try again.";
 
-        public static int playerInitIndex;
-        public static int enemyInitIndex;
+        // Fields to store the index of each character in the game.
+        public static int playerIndex = 0;
+        public static int enemyIndex = 0;
 
         static void Main(string[] args)
         {
+            // fields to store the user input values.
             int xSize = 0, ySize = 0;
            
             CharacterClass playerCharacterClass;
@@ -37,8 +45,9 @@ namespace AutoBattle
                 // Before we initialize the grid, we read the axis values from the user input.
                 GetBattlefieldSize();
 
+                // Then we initialize the grid.
                 grid = new Grid(xSize, ySize);
-                int numberOfPossibleTiles = grid.grids.Count;
+                // Removed the numberOfPossibleTiles var.
                 GetPlayerChoice();
             }
 
@@ -121,7 +130,9 @@ namespace AutoBattle
 
             void CreatePlayerCharacter(int classIndex)
             {
-                playerInitIndex = new Random().Next(0, 2);
+                // Randomly chooses between 0 and 1 to be the player index.
+                // If 0, player will start playing first. If 1, it'll be the second.
+                playerIndex = new Random().Next(0, 2);
 
                 playerCharacterClass = (CharacterClass)classIndex;
                 Console.WriteLine($"Player Class Choice: {playerCharacterClass}");
@@ -129,9 +140,9 @@ namespace AutoBattle
                 // Setting the Player Character default values
                 PlayerCharacter = new Character(playerCharacterClass);
                 PlayerCharacter.Name = $"{playerCharacterClass} Player";
-                PlayerCharacter.Health = 100;
-                PlayerCharacter.BaseDamage = 20;
-                PlayerCharacter.PlayerIndex = playerInitIndex;
+                PlayerCharacter.Health = defaultInitialHealth;
+                PlayerCharacter.BaseDamage = defaultInitialBaseDamage;
+                PlayerCharacter.PlayerIndex = playerIndex;
                 
                 CreateEnemyCharacter();
             }
@@ -140,9 +151,9 @@ namespace AutoBattle
             {
                 // The complementary index to the enemy. 
                 // If the player = 0, then the enemy will be 1, and vice-versa.
-                enemyInitIndex = (playerInitIndex + 1) % 2;
+                enemyIndex = (playerIndex + 1) % 2;
 
-                //randomly choose the enemy class and set up vital variables
+                // Randomly choose the enemy class and set up vital variables
                 var rand = new Random();
                 int randomInteger = rand.Next(1, 4);
                 CharacterClass enemyClass = (CharacterClass)randomInteger;
@@ -152,9 +163,9 @@ namespace AutoBattle
 
                 EnemyCharacter = new Character(enemyClass);
                 EnemyCharacter.Name = $"{enemyClass} Enemy";
-                EnemyCharacter.Health = 100;
-                EnemyCharacter.BaseDamage = 20;
-                EnemyCharacter.PlayerIndex = enemyInitIndex;
+                EnemyCharacter.Health = defaultInitialHealth;
+                EnemyCharacter.BaseDamage = defaultInitialBaseDamage;
+                EnemyCharacter.PlayerIndex = enemyIndex;
 
                 StartGame();
             }
@@ -166,6 +177,7 @@ namespace AutoBattle
                 PlayerCharacter.Target = EnemyCharacter;
                 AllPlayers.Add(PlayerCharacter);
                 AllPlayers.Add(EnemyCharacter);
+
                 AlocatePlayers();
                 StartTurn();
             }
@@ -177,7 +189,8 @@ namespace AutoBattle
 
                 foreach (Character character in AllPlayers)
                 {
-                    // If some character has health <= 0, then he's dead, and it's not necessary to start one more turn anymore.
+                    // If some character has health <= 0, then he died before the end of the turn,
+                    // so it's not necessary to start one more turn anymore.
                     if (character.Health <= 0) 
                         break;
 
@@ -190,27 +203,28 @@ namespace AutoBattle
 
             void HandleTurn()
             {
+                // End of the game with the Enemy being the Winner
                 if(PlayerCharacter.Health <= 0)
                 {
-                    Console.Write(Environment.NewLine + Environment.NewLine);
+                    Console.Write(Environment.NewLine + Environment.NewLine + Environment.NewLine);
                     Console.WriteLine("Game over! Enemy has won the game.");
+                    Console.Write(Environment.NewLine + Environment.NewLine);
 
                     Utils.PrintPressAnyKeyToContinue();
                     return;
                 } 
-                else if (EnemyCharacter.Health <= 0)
+                else if (EnemyCharacter.Health <= 0) // Player is the winner
                 {
-                    Console.Write(Environment.NewLine + Environment.NewLine);
+                    Console.Write(Environment.NewLine + Environment.NewLine + Environment.NewLine);
                     Console.WriteLine("Game over! Player has won the game.");
                     Console.Write(Environment.NewLine + Environment.NewLine);
 
                     Utils.PrintPressAnyKeyToContinue();
-
                     return;
                 }
                 else
                 {
-                    // For design purposes...
+                    // For UI purposes only.
                     if(grid.xLength <= 2)
                         Console.Write(Environment.NewLine + Environment.NewLine + Environment.NewLine);
 
@@ -237,9 +251,9 @@ namespace AutoBattle
                 int random = GetRandomInt(0, grid.GridCount);
                 GridBox RandomLocation = grid.grids.ElementAt(random);
 
-                if (!RandomLocation.ocupied)
+                if (!RandomLocation.ocupied) // Places the character only if grid box is empty, hence not ocupied.
                 {
-                    // Removing the another PlayerCurrentLocation, it's unecessary since we already have the global declaration of it.
+                    // Removing the local PlayerCurrentLocation var, it's unecessary since we already have the global declaration of it.
                     PlayerCurrentLocation = RandomLocation;
                     PlayerCurrentLocation.ocupied = true;
                     PlayerCurrentLocation.PlayerIndex = PlayerCharacter.PlayerIndex;
@@ -247,9 +261,10 @@ namespace AutoBattle
 
                     grid.grids[random] = PlayerCurrentLocation;
                     PlayerCharacter.currentBox = grid.grids[random];
+
                     AlocateEnemyCharacter();
                 } 
-                else
+                else // If the location is ocupied, try again.
                     AlocatePlayerCharacter();
             }
 
@@ -274,7 +289,7 @@ namespace AutoBattle
                     Console.WriteLine("Let the game begin!");
                     Console.ReadKey();
                 }
-                else
+                else // If the location is ocupied, try again.
                     AlocateEnemyCharacter();
             }
         }

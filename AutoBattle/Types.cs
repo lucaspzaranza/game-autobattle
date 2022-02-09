@@ -7,7 +7,7 @@ namespace AutoBattle
 {
     public class Types
     {
-        // Commenting this struct 'cause in my implementation it wasn't necessary.
+        // Commenting this struct 'cause in my implementation there are not specific character logics.
         //public struct CharacterClassSpecific
         //{
         //    CharacterClass CharacterClass;
@@ -43,7 +43,7 @@ namespace AutoBattle
             }
         }
 
-        // Commenting this struct 'cause in my implementation it wasn't necessary.
+        // Commenting this struct 'cause in my implementation there are not specific character logics.
         //public struct CharacterSkills
         //{
         //    string Name;
@@ -51,6 +51,7 @@ namespace AutoBattle
         //    float damageMultiplier;
         //}
 
+        // I created this struct, simulatint the Unity Vector2 class to grab the x and y coordinates..
         public struct Vector2
         {
             public Vector2(int newX, int newY)
@@ -62,6 +63,7 @@ namespace AutoBattle
             public int x;
             public int y;
 
+            // If I need to write it on the screen, we'll use this.
             public override string ToString()
             {
                 return $"[{x}, {y}]";
@@ -77,12 +79,19 @@ namespace AutoBattle
             Archer = 4
         }
 
+        /// <summary>
+        /// Created to select between one of the axis to console read/write operations.
+        /// </summary>
         public enum Axis
         {
             XAxis = 0,
             YAxis = 1
         }
 
+        /// <summary>
+        /// I've created it to console printing purposes.
+        /// We select a direction and write it on the console with the appropriate name.
+        /// </summary>
         public enum Direction
         {
             [Display(Name = "up")]

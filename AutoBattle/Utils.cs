@@ -8,10 +8,11 @@ using System.Text;
 namespace AutoBattle
 {
     /// <summary>
-    /// Class to share some utilities used through the solution.
+    /// Class to share some utilities used throughout the solution.
     /// </summary>
     public static class Utils
     {
+        // Just to not repeat this string everywhere...
         private const string pressAnyKeyToContinueMessage = "Press any key to continue...";
 
         /// <summary>
@@ -36,7 +37,7 @@ namespace AutoBattle
         }
 
         /// <summary>
-        /// Extension method to retrieve the display name into an enumeration.
+        /// Extension method to return the enumeration value display name.
         /// </summary>
         /// <param name="enumValue"></param>
         /// <returns></returns>
